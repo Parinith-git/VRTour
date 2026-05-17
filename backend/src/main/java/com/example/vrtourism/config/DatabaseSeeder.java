@@ -22,8 +22,11 @@ public class DatabaseSeeder implements CommandLineRunner {
 
     @Override
     public void run(String... args) throws Exception {
-        if (destinationRepository.count() == 0) {
-            System.out.println("No destinations found in MongoDB. Seeding database with initial travel experiences...");
+        if (destinationRepository.findByDestinationId(1L).isEmpty()) {
+            System.out.println("Official destinations not found. Clearing old test data and seeding database with official travel experiences...");
+            destinationRepository.deleteAll();
+            vrEnvironmentRepository.deleteAll();
+            travelPackageRepository.deleteAll();
 
             // 1. Taj Mahal
             Destination tajMahal = new Destination();
