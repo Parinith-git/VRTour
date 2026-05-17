@@ -1,0 +1,417 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI Travel Planner - VRTour</title>
+    <link rel="stylesheet" href="../css/style.css">
+    <link rel="stylesheet" href="../css/dark-mode.css">
+    <link href="https://cdn.jsdelivr.net/npm/remixicon@3.5.0/fonts/remixicon.css" rel="stylesheet">
+    <style>
+        .planner-container { padding: 120px 5% 80px; max-width: 900px; margin: 0 auto; }
+
+        /* ── Step transitions ── */
+        .step { display: none; animation: stepIn 0.5s ease forwards; }
+        .step.active { display: block; }
+        @keyframes stepIn { from { opacity:0; transform:translateY(20px); } to { opacity:1; transform:translateY(0); } }
+
+        .step-header { text-align:center; margin-bottom:3rem; }
+        .step-header h1 { font-size:2.8rem; letter-spacing:-1px; margin-bottom:0.8rem; }
+        .step-header p { color:var(--color-text-light); font-size:1.1rem; max-width:500px; margin:0 auto; }
+
+        /* ── Planner form ── */
+        .planner-card { padding:3rem; }
+        .input-row { display:grid; grid-template-columns:1fr 1fr; gap:1.5rem; }
+        @media(max-width:600px) { .input-row { grid-template-columns:1fr; } }
+
+        /* ── Travel style selector ── */
+        .style-selector { display:flex; gap:1rem; margin-top:0.5rem; }
+        .style-option { flex:1; text-align:center; padding:1.2rem 1rem; border-radius:16px; border:1.5px solid rgba(198,231,255,0.35); background:var(--color-bg); cursor:pointer; transition:all 0.3s ease; }
+        .style-option:hover { border-color:var(--color-primary); background:rgba(198,231,255,0.15); }
+        .style-option.selected { border-color:var(--color-accent); background:rgba(255,221,174,0.15); box-shadow:0 4px 15px rgba(255,221,174,0.25); }
+        .style-option i { font-size:1.6rem; display:block; margin-bottom:0.4rem; color:var(--color-text-light); }
+        .style-option.selected i { color:var(--color-accent); }
+        .style-option span { font-size:0.85rem; font-weight:500; color:var(--color-text); }
+        .style-option small { font-size:0.75rem; color:var(--color-text-light); display:block; margin-top:0.2rem; }
+
+        /* ── Destination selector ── */
+        .dest-grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(180px,1fr)); gap:1rem; margin-top:0.5rem; }
+        .dest-chip { padding:0.9rem 1rem; border-radius:14px; border:1.5px solid rgba(198,231,255,0.3); background:var(--color-bg); cursor:pointer; transition:all 0.3s; text-align:center; font-size:0.9rem; font-weight:400; }
+        .dest-chip:hover { border-color:var(--color-primary); }
+        .dest-chip.selected { border-color:var(--color-accent); background:rgba(255,221,174,0.12); font-weight:500; }
+        .dest-chip small { display:block; color:var(--color-text-light); font-size:0.78rem; margin-top:0.2rem; }
+
+        /* ── Loading state ── */
+        .loading-overlay { text-align:center; padding:6rem 2rem; }
+        .loading-overlay h2 { margin-top:2rem; font-size:1.5rem; }
+        .spinner { width:48px; height:48px; border:3px solid rgba(198,231,255,0.4); border-top-color:var(--color-accent); border-radius:50%; animation:spin 0.8s linear infinite; margin:0 auto; }
+        @keyframes spin { to { transform:rotate(360deg); } }
+        .loading-dots { color:var(--color-text-light); margin-top:1rem; font-size:0.95rem; }
+
+        /* ── Results dashboard ── */
+        .results-grid { display:grid; grid-template-columns:260px 1fr; gap:2.5rem; align-items:start; }
+        @media(max-width:700px) { .results-grid { grid-template-columns:1fr; } }
+        .chart-section { text-align:center; }
+        .chart-section canvas { margin:0 auto; }
+        .daily-avg { margin-top:1.5rem; padding:1rem; background:rgba(198,231,255,0.15); border-radius:14px; text-align:center; }
+        .daily-avg .val { font-size:1.8rem; font-weight:600; color:var(--color-text); }
+        .daily-avg .lbl { font-size:0.8rem; color:var(--color-text-light); text-transform:uppercase; letter-spacing:1px; }
+
+        .breakdown-list { list-style:none; padding:0; }
+        .breakdown-item { display:flex; align-items:center; gap:1rem; padding:1rem 0; border-bottom:1px solid rgba(198,231,255,0.2); }
+        .breakdown-item:last-child { border-bottom:none; }
+        .breakdown-icon { width:42px; height:42px; border-radius:12px; display:flex; align-items:center; justify-content:center; font-size:1.2rem; flex-shrink:0; }
+        .breakdown-info { flex:1; }
+        .breakdown-info .name { font-weight:500; font-size:0.95rem; }
+        .breakdown-info .pct { font-size:0.8rem; color:var(--color-text-light); }
+        .breakdown-val { font-weight:600; font-size:1.1rem; }
+
+        /* ── Recommendations ── */
+        .reco-grid { display:grid; grid-template-columns:repeat(auto-fit,minmax(220px,1fr)); gap:1.5rem; margin-top:2rem; }
+        .reco-card { padding:1.8rem; border-radius:20px; background:var(--color-bg); border:1px solid rgba(198,231,255,0.25); }
+        .reco-card i { font-size:1.5rem; color:var(--color-accent); margin-bottom:0.8rem; display:block; }
+        .reco-card h4 { font-size:1rem; margin-bottom:0.5rem; }
+        .reco-card p, .reco-card li { font-size:0.9rem; color:var(--color-text-light); line-height:1.6; }
+        .reco-card ul { padding-left:1.2rem; margin:0; }
+
+        .trip-summary { display:flex; gap:2rem; flex-wrap:wrap; margin-bottom:2.5rem; padding:1.5rem 2rem; background:rgba(198,231,255,0.1); border-radius:16px; border:1px solid rgba(198,231,255,0.2); }
+        .trip-summary .item { display:flex; align-items:center; gap:0.6rem; font-size:0.9rem; }
+        .trip-summary .item i { color:var(--color-accent); }
+        .trip-summary .item strong { font-weight:500; }
+    </style>
+</head>
+<body>
+    <script src="../js/theme.js"></script>
+
+    <nav class="glass">
+        <a href="../index.html" class="logo"><i class="ri-planet-line" style="color: var(--color-accent); margin-right: 8px;"></i> VRTour</a>
+        <ul class="nav-links">
+            <li><a href="../index.html">Home</a></li>
+            <li><a href="destinations.html">Destinations</a></li>
+            <li><a href="packages.html">Packages</a></li>
+        </ul>
+    </nav>
+
+    <div class="planner-container">
+
+        <!-- ═══════ STEP 1: PLANNER FORM ═══════ -->
+        <div class="step active" id="step-form">
+            <div class="step-header">
+                <h1><i class="ri-sparkling-line" style="color:var(--color-accent);"></i> AI Travel Planner</h1>
+                <p>Let our smart planner estimate your ideal travel budget based on real-world costs.</p>
+            </div>
+
+            <div class="card glass planner-card">
+                <div class="form-group">
+                    <label>Where are you traveling from?</label>
+                    <input type="text" id="originInput" placeholder="e.g. Mumbai, London, New York...">
+                </div>
+
+                <div class="form-group">
+                    <label>Select Destination</label>
+                    <div class="dest-grid" id="destGrid"><!-- filled by JS --></div>
+                </div>
+
+                <div class="input-row">
+                    <div class="form-group">
+                        <label>Start Date</label>
+                        <input type="date" id="startDate">
+                    </div>
+                    <div class="form-group">
+                        <label>End Date</label>
+                        <input type="date" id="endDate">
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label>Travel Style</label>
+                    <div class="style-selector">
+                        <div class="style-option" data-style="budget" onclick="selectStyle(this)">
+                            <i class="ri-wallet-line"></i>
+                            <span>Budget</span>
+                            <small>Save smart</small>
+                        </div>
+                        <div class="style-option selected" data-style="comfortable" onclick="selectStyle(this)">
+                            <i class="ri-heart-line"></i>
+                            <span>Comfortable</span>
+                            <small>Best value</small>
+                        </div>
+                        <div class="style-option" data-style="luxury" onclick="selectStyle(this)">
+                            <i class="ri-vip-crown-line"></i>
+                            <span>Luxury</span>
+                            <small>Premium stay</small>
+                        </div>
+                    </div>
+                </div>
+
+                <button class="btn btn-primary" id="planBtn" onclick="generatePlan()" style="width:100%; padding:1.2rem; font-size:1.1rem; margin-top:1.5rem;">
+                    <i class="ri-sparkling-line" style="margin-right:8px;"></i> Generate AI Budget Plan
+                </button>
+            </div>
+        </div>
+
+        <!-- ═══════ STEP 2: LOADING ═══════ -->
+        <div class="step" id="step-loading">
+            <div class="card glass loading-overlay">
+                <div class="spinner"></div>
+                <h2>Analyzing your trip...</h2>
+                <p class="loading-dots" id="loadingText">Estimating flight costs...</p>
+            </div>
+        </div>
+
+        <!-- ═══════ STEP 3: RESULTS ═══════ -->
+        <div class="step" id="step-results">
+            <div class="step-header">
+                <h1>Your Travel Budget</h1>
+                <p id="resultSubtitle">AI-estimated breakdown for your trip</p>
+            </div>
+
+            <div class="trip-summary" id="tripSummary"></div>
+
+            <div class="card glass" style="padding:2.5rem; margin-bottom:2rem;">
+                <div class="results-grid">
+                    <div class="chart-section">
+                        <canvas id="donutChart"></canvas>
+                        <div class="daily-avg">
+                            <div class="val" id="dailyAvg">$0</div>
+                            <div class="lbl">Daily Average</div>
+                        </div>
+                    </div>
+                    <div>
+                        <h3 style="margin-bottom:1.5rem; font-size:1.3rem;">Budget Breakdown</h3>
+                        <ul class="breakdown-list" id="breakdownList"></ul>
+                    </div>
+                </div>
+            </div>
+
+            <h3 style="margin-bottom:0.5rem; font-size:1.5rem;"><i class="ri-lightbulb-line" style="color:var(--color-accent);"></i> AI Recommendations</h3>
+            <div class="reco-grid" id="recoGrid"></div>
+
+            <div style="text-align:center; margin-top:3rem; display:flex; gap:1rem; justify-content:center; flex-wrap:wrap;">
+                <button class="btn btn-outline" onclick="resetPlanner()" style="padding:1rem 2.5rem;"><i class="ri-refresh-line" style="margin-right:6px;"></i> Plan Another Trip</button>
+                <button class="btn btn-primary" onclick="bookNow()" style="padding:1rem 2.5rem;"><i class="ri-shopping-bag-line" style="margin-right:6px;"></i> Book This Trip</button>
+            </div>
+        </div>
+    </div>
+
+    <script src="../js/travel-planner.js"></script>
+    <script>
+        let selectedDest = null;
+        let selectedStyle = 'comfortable';
+        let currentResult = null;
+
+        // ── Init: populate destinations ──
+        document.addEventListener('DOMContentLoaded', async () => {
+            const grid = document.getElementById('destGrid');
+            const urlParams = new URLSearchParams(window.location.search);
+            const preselect = urlParams.get('destId');
+
+            // Set default dates (tomorrow + 5 days)
+            const tomorrow = new Date(); tomorrow.setDate(tomorrow.getDate() + 1);
+            const end = new Date(tomorrow); end.setDate(end.getDate() + 5);
+            document.getElementById('startDate').value = fmt(tomorrow);
+            document.getElementById('endDate').value = fmt(end);
+
+            try {
+                const res = await fetch('http://localhost:8080/api/destinations');
+                const dests = await res.json();
+                grid.innerHTML = '';
+                dests.forEach(d => {
+                    const chip = document.createElement('div');
+                    chip.className = 'dest-chip' + (preselect == d.destinationId ? ' selected' : '');
+                    chip.innerHTML = `${d.destinationName}<small>${d.location}</small>`;
+                    chip.onclick = () => { document.querySelectorAll('.dest-chip').forEach(c => c.classList.remove('selected')); chip.classList.add('selected'); selectedDest = d.destinationId; };
+                    if (preselect == d.destinationId) selectedDest = d.destinationId;
+                    grid.appendChild(chip);
+                });
+            } catch(e) {
+                // Fallback: use local data
+                grid.innerHTML = '';
+                Object.entries(DEST_DATA).forEach(([id, d]) => {
+                    const chip = document.createElement('div');
+                    chip.className = 'dest-chip' + (preselect == id ? ' selected' : '');
+                    chip.innerHTML = `${d.name}<small>${d.city}, ${d.country}</small>`;
+                    chip.onclick = () => { document.querySelectorAll('.dest-chip').forEach(c => c.classList.remove('selected')); chip.classList.add('selected'); selectedDest = parseInt(id); };
+                    if (preselect == id) selectedDest = parseInt(id);
+                    grid.appendChild(chip);
+                });
+            }
+        });
+
+        function fmt(d) { return d.toISOString().split('T')[0]; }
+
+        function selectStyle(el) {
+            document.querySelectorAll('.style-option').forEach(o => o.classList.remove('selected'));
+            el.classList.add('selected');
+            selectedStyle = el.dataset.style;
+        }
+
+        function showStep(id) {
+            document.querySelectorAll('.step').forEach(s => s.classList.remove('active'));
+            document.getElementById(id).classList.add('active');
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+        }
+
+        // ── Generate Plan (calls Groq AI via backend) ──
+        async function generatePlan() {
+            const origin = document.getElementById('originInput').value.trim();
+            const start = document.getElementById('startDate').value;
+            const end = document.getElementById('endDate').value;
+
+            if (!origin) { alert('Please enter your departure city.'); return; }
+            if (!selectedDest) { alert('Please select a destination.'); return; }
+            if (!start || !end) { alert('Please select travel dates.'); return; }
+            if (new Date(end) <= new Date(start)) { alert('End date must be after start date.'); return; }
+
+            showStep('step-loading');
+
+            const msgs = ['Connecting to AI...','Estimating flight costs...','Analyzing hotel rates...','Calculating food & dining...','Generating recommendations...','Finalizing your budget...'];
+            let i = 0;
+            const interval = setInterval(() => {
+                i++;
+                if (i < msgs.length) document.getElementById('loadingText').textContent = msgs[i];
+            }, 800);
+
+            try {
+                const res = await fetch('http://localhost:8080/api/ai/travel-plan', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        origin: origin,
+                        destId: selectedDest,
+                        startDate: start,
+                        endDate: end,
+                        style: selectedStyle
+                    })
+                });
+
+                clearInterval(interval);
+
+                if (res.ok) {
+                    const data = await res.json();
+                    currentResult = data;
+                    renderResults(data, start, end);
+                    showStep('step-results');
+                } else {
+                    throw new Error('API returned ' + res.status);
+                }
+            } catch (e) {
+                clearInterval(interval);
+                console.warn('Groq AI failed, falling back to local estimation:', e);
+                // Fallback to local estimation engine
+                currentResult = calculateBudget(selectedDest, origin, start, end, selectedStyle);
+                renderResults(currentResult, start, end);
+                showStep('step-results');
+            }
+        }
+
+        // ── Render Results (supports both AI and local response formats) ──
+        function renderResults(r, start, end) {
+            // Normalize data — AI backend returns flat keys, local engine returns nested objects
+            const isAiResponse = typeof r.destination === 'string';
+            const isSpace = r.isSpaceDestination === true;
+            const destName = isAiResponse ? r.destination : (r.destination.name + ', ' + r.destination.country);
+            const nights = r.nights;
+            const style = r.style;
+            const total = r.total;
+
+            // Trip summary bar
+            const startFmt = new Date(start).toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'});
+            const endFmt = new Date(end).toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'});
+            const sourceLabel = isSpace ? 'AI-Assisted Projection' : (isAiResponse ? 'Powered by Groq AI' : 'Local Estimation');
+            document.getElementById('tripSummary').innerHTML = `
+                <div class="item"><i class="${isSpace ? 'ri-rocket-line' : 'ri-map-pin-line'}"></i> <strong>${r.origin}</strong> → <strong>${destName}</strong></div>
+                <div class="item"><i class="ri-calendar-line"></i> ${startFmt} – ${endFmt} <strong>(${nights} nights)</strong></div>
+                <div class="item"><i class="ri-user-star-line"></i> ${style.charAt(0).toUpperCase() + style.slice(1)} Style</div>
+                <div class="item"><i class="${isSpace ? 'ri-rocket-2-line' : 'ri-sparkling-line'}"></i> ${sourceLabel}</div>
+            `;
+            document.getElementById('resultSubtitle').textContent = isSpace
+                ? 'Conceptual Space Tourism Budget — Estimated Future Pricing'
+                : `AI-estimated budget for ${destName}`;
+
+            // Build breakdown array — space gets futuristic category names
+            const breakdown = isSpace ? [
+                { label:'Rocket Travel', value:r.flight, icon:'ri-rocket-line', color:'#C6E7FF' },
+                { label:'Space Accommodation', value:r.hotel, icon:'ri-space-ship-line', color:'#FFDDAE' },
+                { label:'Food & Life Support', value:r.food, icon:'ri-capsule-line', color:'#D4F6FF' },
+                { label:'Astronaut Training & Medical', value:r.transport, icon:'ri-heart-pulse-line', color:'#B8E6C8' },
+                { label:'Insurance & Safety', value:r.tickets, icon:'ri-shield-star-line', color:'#E8D4FF' },
+                { label:'Miscellaneous', value:r.misc, icon:'ri-more-line', color:'#FFD4D4' }
+            ] : isAiResponse ? [
+                { label:'Flights', value:r.flight, icon:'ri-plane-line', color:'#C6E7FF' },
+                { label:'Hotel & Stay', value:r.hotel, icon:'ri-hotel-line', color:'#FFDDAE' },
+                { label:'Food & Dining', value:r.food, icon:'ri-restaurant-line', color:'#D4F6FF' },
+                { label:'Local Transport', value:r.transport, icon:'ri-bus-line', color:'#B8E6C8' },
+                { label:'Entry Tickets', value:r.tickets, icon:'ri-ticket-line', color:'#E8D4FF' },
+                { label:'Miscellaneous', value:r.misc, icon:'ri-more-line', color:'#FFD4D4' }
+            ] : r.breakdown;
+
+            // Donut chart
+            drawDonutChart(document.getElementById('donutChart'), breakdown, total);
+
+            // Helper: format large INR amounts
+            function formatINR(val) {
+                if (val >= 1_00_00_000) return '₹' + (val / 1_00_00_000).toFixed(1) + ' Cr';
+                if (val >= 1_00_000) return '₹' + (val / 1_00_000).toFixed(1) + ' L';
+                return '₹' + val.toLocaleString('en-IN');
+            }
+
+            // Daily avg
+            document.getElementById('dailyAvg').textContent = formatINR(r.dailyAvg || Math.round(total / nights));
+
+            // Breakdown list
+            const list = document.getElementById('breakdownList');
+            list.innerHTML = '';
+            breakdown.forEach(item => {
+                const pct = Math.round((item.value / total) * 100);
+                list.innerHTML += `
+                    <li class="breakdown-item">
+                        <div class="breakdown-icon" style="background:${item.color}40;color:${item.color.replace('FF','CC')}"><i class="${item.icon}"></i></div>
+                        <div class="breakdown-info"><div class="name">${item.label}</div><div class="pct">${pct}% of budget</div></div>
+                        <div class="breakdown-val">${formatINR(item.value)}</div>
+                    </li>`;
+            });
+
+            // Recommendations — handle both AI (flat keys) and local (nested destination object) formats
+            const bestMonths = isAiResponse ? r.bestMonths : r.destination.bestMonths;
+            const stayDays = isAiResponse ? (r.suggestedStay || r.stayDays) : r.destination.stayDays;
+            const nearby = isAiResponse ? (r.nearby || []) : r.destination.nearby;
+            const tips = isAiResponse ? (r.tips || []) : r.destination.tips;
+
+            const grid = document.getElementById('recoGrid');
+            grid.innerHTML = `
+                <div class="reco-card">
+                    <i class="ri-calendar-check-line"></i>
+                    <h4>Best Time to Visit</h4>
+                    <p>${bestMonths}</p>
+                </div>
+                <div class="reco-card">
+                    <i class="ri-time-line"></i>
+                    <h4>Suggested Stay</h4>
+                    <p>${stayDays}</p>
+                </div>
+                <div class="reco-card">
+                    <i class="ri-compass-3-line"></i>
+                    <h4>Nearby Attractions</h4>
+                    <ul>${nearby.map(n => `<li>${n}</li>`).join('')}</ul>
+                </div>
+                <div class="reco-card">
+                    <i class="ri-guide-line"></i>
+                    <h4>Travel Tips</h4>
+                    <ul>${tips.map(t => `<li>${t}</li>`).join('')}</ul>
+                </div>
+            `;
+        }
+
+        function resetPlanner() {
+            showStep('step-form');
+        }
+
+        function bookNow() {
+            const token = localStorage.getItem('token');
+            if (!token) { window.location.href = 'login.html'; return; }
+            if (selectedDest) { window.location.href = `checkout.html?packageId=${selectedDest}`; }
+        }
+    </script>
+</body>
+</html>

@@ -1,0 +1,100 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dashboard - VRTour</title>
+    <link rel="stylesheet" href="../css/style.css">
+    <link rel="stylesheet" href="../css/dark-mode.css">
+    <link href="https://cdn.jsdelivr.net/npm/remixicon@3.5.0/fonts/remixicon.css" rel="stylesheet">
+    <style>
+        .dashboard-container { padding: 140px 5% 80px 5%; max-width: 1200px; margin: 0 auto; }
+        .booking-card { display: flex; justify-content: space-between; align-items: center; padding: 2rem; margin-bottom: 1.5rem; }
+        .status-confirmed { background: var(--color-accent); color: var(--color-text); border: none; padding: 8px 16px; border-radius: 50px; font-weight: 500; font-size: 0.85rem; letter-spacing: 0.5px; text-transform: uppercase; }
+        .welcome-section { margin-bottom: 4rem; }
+        .welcome-section h1 { font-size: 3rem; letter-spacing: -1px; }
+        
+        @media (max-width: 768px) {
+            .booking-card { flex-direction: column; align-items: flex-start; gap: 1rem; }
+            .booking-price { align-self: flex-start !important; margin-bottom: 0.5rem; }
+        }
+    </style>
+</head>
+<body>
+    <script src="../js/theme.js"></script>
+
+    <nav class="glass">
+        <a href="../index.html" class="logo"><i class="ri-planet-line" style="color: var(--color-accent); margin-right: 8px;"></i> VRTour</a>
+        <ul class="nav-links">
+            <li><a href="../index.html">Home</a></li>
+            <li><a href="destinations.html">Destinations</a></li>
+            <li><a href="packages.html">Packages</a></li>
+            <li><a href="profile.html">Profile</a></li>
+        </ul>
+    </nav>
+
+    <div class="dashboard-container">
+        <div class="welcome-section">
+            <p style="color: var(--color-text-light); text-transform: uppercase; letter-spacing: 2px; font-size: 0.85rem; font-weight: 500; margin-bottom: 0.5rem;">User Dashboard</p>
+            <h1>Overview</h1>
+        </div>
+        
+        <h2 style="font-size: 1.5rem; margin-bottom: 1.5rem;">Your Recent Bookings</h2>
+        <div id="bookings-container">
+            <p style="color: var(--color-text-light);">Loading your bookings...</p>
+        </div>
+    </div>
+
+    <script src="../js/auth.js"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', async () => {
+            checkAuth();
+            
+            const userStr = localStorage.getItem('user');
+            if (userStr) {
+                const user = JSON.parse(userStr);
+                // Personalized greeting is handled on the landing page only
+            }
+
+            const token = localStorage.getItem('token');
+            const container = document.getElementById('bookings-container');
+
+            try {
+                const res = await fetch('http://localhost:8080/api/bookings/history', {
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
+
+                if (res.ok) {
+                    const bookings = await res.json();
+                    container.innerHTML = '';
+                    
+                    if (bookings.length === 0) {
+                        container.innerHTML = '<div class="card glass" style="padding: 4rem; text-align: center;"><p style="color: var(--color-text-light); margin-bottom: 1rem;">You have no active bookings.</p><a href="packages.html" class="btn btn-primary">Explore Packages</a></div>';
+                        return;
+                    }
+
+                    // Sort by newest first
+                    bookings.reverse().forEach(b => {
+                        const date = new Date(b.bookingDate).toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' });
+                        const card = `
+                            <div class="card glass booking-card">
+                                <div>
+                                    <h3 style="font-size: 1.25rem; margin-bottom: 0.5rem;">${b.travelPackage.packageName}</h3>
+                                    <p style="color: var(--color-text-light); font-size: 0.95rem;"><i class="ri-calendar-line"></i> Booked on: ${date}</p>
+                                </div>
+                                <div style="display: flex; flex-direction: column; align-items: flex-end;">
+                                    <span class="booking-price" style="font-size: 1.5rem; font-weight: 500; margin-bottom: 0.5rem;">$${b.travelPackage.price}</span>
+                                    <span class="status-confirmed">${b.paymentStatus}</span>
+                                </div>
+                            </div>
+                        `;
+                        container.innerHTML += card;
+                    });
+                }
+            } catch (error) {
+                container.innerHTML = '<p>Error loading your bookings.</p>';
+            }
+        });
+    </script>
+</body>
+</html>

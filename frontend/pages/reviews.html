@@ -1,0 +1,72 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Reviews - VRTour</title>
+    <link rel="stylesheet" href="../css/style.css">
+    <link rel="stylesheet" href="../css/dark-mode.css">
+    <link href="https://cdn.jsdelivr.net/npm/remixicon@3.5.0/fonts/remixicon.css" rel="stylesheet">
+    <style>
+        .reviews-container { padding: 140px 5% 80px 5%; max-width: 800px; margin: 0 auto; }
+        .review-card { padding: 2.5rem; margin-bottom: 1.5rem; }
+        .stars { color: var(--color-highlight); font-size: 1.4rem; letter-spacing: 2px; }
+    </style>
+</head>
+<body>
+    <script src="../js/theme.js"></script>
+    <nav class="glass">
+        <a href="../index.html" class="logo"><i class="ri-planet-line" style="color: var(--color-accent); margin-right: 8px;"></i> VRTour</a>
+        <ul class="nav-links">
+            <li><a href="../index.html">Home</a></li>
+            <li><a href="destinations.html">Destinations</a></li>
+        </ul>
+    </nav>
+    <div class="reviews-container">
+        <h1 style="text-align: center; margin-bottom: 3rem; font-size: 3rem; letter-spacing: -1px;">User Experiences</h1>
+        
+        <div class="card glass" style="padding: 3rem; margin-bottom: 4rem;">
+            <h3 style="margin-bottom: 2rem; font-size: 1.5rem;">Leave a Review</h3>
+            <form>
+                <div class="form-group">
+                    <label>Destination</label>
+                    <select>
+                        <option value="1">Tropical Beach Paradise</option>
+                        <option value="2">Snowy Peaks</option>
+                        <option value="3">Ancient Temple</option>
+                        <option value="4">Neon City</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label>Rating (1-5)</label>
+                    <input type="number" min="1" max="5" value="5">
+                </div>
+                <div class="form-group">
+                    <label>Feedback</label>
+                    <textarea placeholder="Share your experience..." style="height: 120px; resize: none;"></textarea>
+                </div>
+                <button type="button" class="btn btn-primary" onclick="alert('Review submitted successfully!')" style="width: 100%; padding: 1.2rem; font-size: 1.1rem;">Submit Review</button>
+            </form>
+        </div>
+
+        <h3 style="margin-bottom: 1.5rem; font-size: 1.5rem;">Recent Reviews</h3>
+        <div class="card glass review-card">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
+                <strong style="font-size: 1.2rem;">Alex J.</strong>
+                <span class="stars">★★★★★</span>
+            </div>
+            <p style="color: var(--color-text); font-size: 0.9rem; margin-bottom: 1rem; text-transform: uppercase; font-weight: 500; letter-spacing: 1px;">Tropical Beach Paradise</p>
+            <p style="color: var(--color-text-light); line-height: 1.8;">"The VR experience was amazing! It really felt like I was standing on the beach. The minimalistic design of the platform made the booking process incredibly smooth and elegant."</p>
+        </div>
+        
+        <div class="card glass review-card">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
+                <strong style="font-size: 1.2rem;">Sarah M.</strong>
+                <span class="stars">★★★★☆</span>
+            </div>
+            <p style="color: var(--color-text); font-size: 0.9rem; margin-bottom: 1rem; text-transform: uppercase; font-weight: 500; letter-spacing: 1px;">Neon City</p>
+            <p style="color: var(--color-text-light); line-height: 1.8;">"Loved the cyber aesthetic combined with the soft UI of the dashboard. Navigation was seamless on my iPhone using the virtual joystick."</p>
+        </div>
+    </div>
+</body>
+</html>

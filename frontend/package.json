@@ -1,0 +1,9 @@
+{
+  "name": "vr-tourism-frontend",
+  "version": "1.0.0",
+  "description": "VR Tourism Platform Frontend",
+  "scripts": {
+    "dev": "npx -y http-server . -p 3000 -c-1 --cors -o",
+    "start": "npx -y http-server . -p 3000 -c-1 --cors"
+  }
+}

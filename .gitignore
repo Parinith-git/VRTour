@@ -1,0 +1,48 @@
+# Dependency Directories
+node_modules/
+jspm_packages/
+web_modules/
+frontend/node_modules/
+
+# Build & Compilation outputs
+build/
+dist/
+out/
+bin/
+target/
+.gradle/
+.settings/
+.classpath
+.project
+.factorypath
+.springBeans
+.sts4-cache
+backend/build/
+backend/.gradle/
+
+# Environments and Secrets
+.env
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+*.env
+backend/.env
+
+# Logs and databases
+*.log
+*.sqlite
+*.class
+*.jar
+*.war
+
+# IDEs and editors
+.vscode/
+.idea/
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.sw?
+.DS_Store
+Thumbs.db

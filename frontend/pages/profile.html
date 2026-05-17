@@ -1,0 +1,113 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Profile - VRTour</title>
+    <link rel="stylesheet" href="../css/style.css">
+    <link rel="stylesheet" href="../css/dark-mode.css">
+    <link href="https://cdn.jsdelivr.net/npm/remixicon@3.5.0/fonts/remixicon.css" rel="stylesheet">
+    <style>
+        .profile-container { padding: 140px 5% 80px 5%; max-width: 600px; margin: 0 auto; }
+        .profile-card { padding: 4rem 3rem; text-align: center; }
+        .avatar { width: 120px; height: 120px; background: var(--color-primary); border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 3.5rem; margin: 0 auto 2rem auto; color: var(--color-text); font-weight: 400; box-shadow: 0 10px 25px rgba(198, 231, 255, 0.5); overflow: hidden; }
+        .avatar img { width: 100%; height: 100%; object-fit: cover; }
+        .stat-box { background: var(--color-bg); padding: 2rem; border-radius: 16px; margin-top: 3rem; border: 1px solid rgba(0,0,0,0.02); }
+    </style>
+</head>
+<body>
+    <script src="../js/theme.js"></script>
+
+    <nav class="glass">
+        <a href="../index.html" class="logo"><i class="ri-planet-line" style="color: var(--color-accent); margin-right: 8px;"></i> VRTour</a>
+        <ul class="nav-links">
+            <li><a href="../index.html">Home</a></li>
+            <li><a href="dashboard.html">Dashboard</a></li>
+            <li><a href="packages.html">Packages</a></li>
+        </ul>
+    </nav>
+
+    <div class="profile-container">
+        <div class="card glass profile-card">
+            <div class="avatar" id="avatarInitial"></div>
+            <h2 id="profileName" style="font-size: 2.2rem; margin-bottom: 0.5rem; letter-spacing: -0.5px;"></h2>
+            <p id="profileEmail" style="color: var(--color-text-light); font-size: 1.1rem; margin-bottom: 2rem;"></p>
+
+            <div class="stat-box">
+                <h3 style="color: var(--color-text); font-size: 3rem; font-weight: 500; line-height: 1;" id="bookingCount">-</h3>
+                <p style="color: var(--color-text-light); font-size: 0.95rem; text-transform: uppercase; letter-spacing: 1px; margin-top: 0.5rem;">Total Bookings</p>
+            </div>
+
+            <button onclick="logout()" class="btn btn-outline" style="width: 100%; margin-top: 3rem; padding: 1.2rem;">Sign Out Securely</button>
+        </div>
+
+        <div style="margin-top: 4rem;">
+            <h2 style="font-size: 1.8rem; margin-bottom: 2rem;">My Favorites</h2>
+            <div id="favorites-container" style="display: grid; grid-template-columns: 1fr; gap: 1.5rem;">
+                <p style="color: var(--color-text-light);">Loading favorites...</p>
+            </div>
+        </div>
+    </div>
+
+    <script src="../js/auth.js"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', async () => {
+            checkAuth();
+            const userStr = localStorage.getItem('user');
+            if (userStr) {
+                const user = JSON.parse(userStr);
+                document.getElementById('profileName').innerText = user.name;
+                document.getElementById('profileEmail').innerText = user.email;
+                if (user.profilePicture) {
+                    document.getElementById('avatarInitial').innerHTML = `<img src="${user.profilePicture}" alt="Profile Picture">`;
+                } else {
+                    document.getElementById('avatarInitial').innerText = user.name.charAt(0).toUpperCase();
+                }
+            }
+
+            const token = localStorage.getItem('token');
+            try {
+                const res = await fetch('http://localhost:8080/api/bookings/history', {
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
+                if (res.ok) {
+                    const bookings = await res.json();
+                    document.getElementById('bookingCount').innerText = bookings.length;
+                }
+            } catch (e) {
+                console.error("Could not fetch bookings");
+            }
+
+            try {
+                const favContainer = document.getElementById('favorites-container');
+                const resFav = await fetch('http://localhost:8080/api/favorites', {
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
+                if (resFav.ok) {
+                    const favorites = await resFav.json();
+                    if (favorites.length === 0) {
+                        favContainer.innerHTML = '<p style="color: var(--color-text-light);">You have no favorites yet.</p>';
+                    } else {
+                        favContainer.innerHTML = '';
+                        favorites.forEach(dest => {
+                            const card = `
+                                <div class="card glass" style="display: flex; gap: 1.5rem; align-items: center; padding: 1rem 1.5rem;">
+                                    <img src="${dest.imagePath}" alt="${dest.destinationName}" style="width: 80px; height: 80px; border-radius: 12px; margin-bottom: 0;">
+                                    <div style="flex: 1;">
+                                        <h3 style="margin-bottom: 0.2rem;">${dest.destinationName}</h3>
+                                        <p style="color: var(--color-text-light); font-size: 0.9rem; margin-bottom: 0;">${dest.location}</p>
+                                    </div>
+                                    <a href="destination-details.html?id=${dest.destinationId}" class="btn btn-primary" style="padding: 0.6rem 1.5rem;">View</a>
+                                </div>
+                            `;
+                            favContainer.innerHTML += card;
+                        });
+                    }
+                }
+            } catch (e) {
+                document.getElementById('favorites-container').innerHTML = '<p>Error loading favorites.</p>';
+            }
+        });
+    </script>
+</body>
+</html>

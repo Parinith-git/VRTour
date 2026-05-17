@@ -1,0 +1,42 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>VR Tourism Platform</title>
+    <link rel="stylesheet" href="css/style.css">
+    <link rel="stylesheet" href="css/dark-mode.css">
+    <link href="https://cdn.jsdelivr.net/npm/remixicon@3.5.0/fonts/remixicon.css" rel="stylesheet">
+</head>
+<body>
+    <script src="js/theme.js"></script>
+
+    <nav class="glass">
+        <a href="index.html" class="logo"><i class="ri-planet-line" style="color: var(--color-accent); margin-right: 8px;"></i> VRTour</a>
+        <ul class="nav-links">
+            <li><a href="index.html">Home</a></li>
+            <li><a href="pages/destinations.html">Destinations</a></li>
+            <li><a href="pages/packages.html">Packages</a></li>
+        </ul>
+        <div id="auth-buttons">
+            <a href="pages/login.html" class="btn btn-outline">Login</a>
+            <a href="pages/signup.html" class="btn btn-primary">Sign Up</a>
+        </div>
+    </nav>
+
+    <header class="hero" id="hero-section">
+        <div class="hero-content" id="hero-content" style="transition: opacity 1s ease;">
+            <h1 id="greeting">Hey Explorer</h1>
+            <p>Explore destinations in interactive 3D before planning your journey. A modern virtual travel experience designed for exploration and luxury.</p>
+            <div class="hero-actions">
+                <button id="start-exploring-btn" class="btn btn-primary" style="font-size: 1.1rem; padding: 1.2rem 2.5rem; cursor: pointer; border: none; font-family: inherit;">Start Exploring</button>
+            </div>
+        </div>
+    </header>
+
+
+    <script src="js/auth.js"></script>
+    <script src="js/landing.js?v=2"></script>
+    <script src="js/main.js"></script>
+</body>
+</html>

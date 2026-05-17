@@ -1,0 +1,504 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <title>VR Exploration - VRTour</title>
+    <link rel="stylesheet" href="../css/style.css">
+    <link rel="stylesheet" href="../css/dark-mode.css">
+    <link href="https://cdn.jsdelivr.net/npm/remixicon@3.5.0/fonts/remixicon.css" rel="stylesheet">
+    <style>
+        body { margin: 0; overflow: hidden; background-color: var(--color-bg); font-family: 'Outfit', sans-serif; }
+        #canvas-container { width: 100vw; height: 100vh; position: absolute; top: 0; left: 0; z-index: 1; cursor: grab; }
+        #canvas-container:active { cursor: grabbing; }
+        
+        #ui-overlay {
+            position: absolute;
+            top: 30px;
+            left: 30px;
+            pointer-events: none;
+            z-index: 10;
+        }
+
+        .vr-panel {
+            background: rgba(255, 255, 255, 0.85);
+            backdrop-filter: blur(24px);
+            -webkit-backdrop-filter: blur(24px);
+            padding: 1.5rem 2.5rem;
+            border-radius: 50px;
+            border: 1px solid rgba(198, 231, 255, 0.4);
+            box-shadow: 0 10px 30px rgba(44, 62, 80, 0.06);
+            display: inline-block;
+        }
+
+        #dest-name {
+            margin: 0;
+            font-size: 1.2rem;
+            font-weight: 500;
+            color: var(--color-text);
+            letter-spacing: -0.5px;
+        }
+
+        #exit-btn {
+            position: absolute;
+            top: 30px;
+            right: 30px;
+            padding: 1rem 2rem;
+            background: rgba(255, 255, 255, 0.85);
+            backdrop-filter: blur(24px);
+            color: var(--color-text);
+            border: 1px solid rgba(198, 231, 255, 0.4);
+            border-radius: 50px;
+            cursor: pointer;
+            pointer-events: auto;
+            z-index: 10;
+            text-decoration: none;
+            font-weight: 500;
+            box-shadow: 0 10px 30px rgba(44, 62, 80, 0.06);
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            transition: all 0.3s ease;
+        }
+
+        #exit-btn:hover {
+            background: var(--color-white);
+            transform: translateY(-2px);
+            box-shadow: 0 15px 35px rgba(44, 62, 80, 0.1);
+        }
+        
+        #instructions {
+            position: absolute;
+            bottom: 40px;
+            left: 50%;
+            transform: translateX(-50%);
+            color: var(--color-text-light);
+            text-align: center;
+            pointer-events: none;
+            z-index: 10;
+            font-size: 0.95rem;
+            letter-spacing: 0.5px;
+        }
+
+        #crosshair {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            width: 8px;
+            height: 8px;
+            background-color: var(--color-accent);
+            border-radius: 50%;
+            transform: translate(-50%, -50%);
+            pointer-events: none;
+            z-index: 10;
+            box-shadow: 0 0 12px rgba(255, 221, 174, 0.8);
+        }
+
+        #joystick-zone {
+            position: absolute;
+            bottom: 30px;
+            left: 30px;
+            width: 120px;
+            height: 120px;
+            z-index: 10;
+        }
+        
+        @media (min-width: 768px) {
+            #joystick-zone { display: none; }
+        }
+        @media (max-width: 768px) {
+            #crosshair { display: none; }
+            #instructions { bottom: 20px; font-size: 0.8rem; }
+            .vr-panel { padding: 1rem 1.5rem; }
+            #exit-btn { top: 20px; right: 20px; padding: 0.8rem 1.5rem; }
+            #ui-overlay { top: 20px; left: 20px; }
+        }
+        #fade-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100vw;
+            height: 100vh;
+            background: #0F172A;
+            z-index: 1000;
+            pointer-events: none;
+            transition: opacity 1.5s ease-in-out;
+            opacity: 1;
+        }
+    </style>
+</head>
+<body>
+    <script src="../js/theme.js"></script>
+    <div id="fade-overlay"></div>
+
+    <div id="ui-overlay">
+        <div class="vr-panel">
+            <h2 id="dest-name"><i class="ri-map-pin-line" style="color: var(--color-accent); margin-right: 5px;"></i> Loading...</h2>
+        </div>
+    </div>
+
+    <a href="destinations.html" id="exit-btn"><i class="ri-close-line"></i> Exit VR</a>
+    
+    <div id="crosshair"></div>
+    
+    <div id="instructions" class="vr-panel">
+        <span class="desktop-ins">Click to start • Move mouse to look • WASD to move • Look up/down to fly</span>
+        <span class="mobile-ins" style="display:none;">Use joystick to move • Drag screen to look</span>
+    </div>
+
+    <div id="joystick-zone"></div>
+    <div id="canvas-container"></div>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/loaders/GLTFLoader.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/nipplejs/0.10.1/nipplejs.min.js"></script>
+
+    <script>
+        const container = document.getElementById('canvas-container');
+        const scene = new THREE.Scene();
+        // Soft atmospheric fog — fades terrain edges into a warm horizon
+        const fogColor = 0xE8F0F8;
+        scene.fog = new THREE.Fog(fogColor, 150, 600);
+        scene.background = new THREE.Color(fogColor);
+
+        const camera = new THREE.PerspectiveCamera(60, window.innerWidth / window.innerHeight, 0.1, 5000);
+        camera.position.set(50, 20, 50);
+
+        const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
+        renderer.setClearColor(fogColor, 1);
+        renderer.setSize(window.innerWidth, window.innerHeight);
+        renderer.outputEncoding = THREE.sRGBEncoding;
+        renderer.toneMapping = THREE.ACESFilmicToneMapping;
+        renderer.toneMappingExposure = 1.2;
+        renderer.shadowMap.enabled = true;
+        container.appendChild(renderer.domElement);
+
+        const urlParams = new URLSearchParams(window.location.search);
+        const destId = urlParams.get('id') || '1';
+
+        // Movement
+        const keys = {};
+        const moveSpeed = 30;
+        const flySpeed = 20;
+        let prevTime = performance.now();
+
+        // Mouse look
+        let isMouseDown = false;
+        let pitch = 0;
+        let yaw = 0;
+        const sensitivity = 0.003;
+
+        // Collision
+        const colliders = [];
+        const playerRadius = 3.0;
+        const raycaster = new THREE.Raycaster();
+
+        const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+
+        // ── COLLISION ──
+        function checkCollision(pos) {
+            if (colliders.length === 0) return false;
+
+            const dirs = [
+                new THREE.Vector3(1, 0, 0),
+                new THREE.Vector3(-1, 0, 0),
+                new THREE.Vector3(0, 0, 1),
+                new THREE.Vector3(0, 0, -1),
+                new THREE.Vector3(1, 0, 1).normalize(),
+                new THREE.Vector3(-1, 0, 1).normalize(),
+                new THREE.Vector3(1, 0, -1).normalize(),
+                new THREE.Vector3(-1, 0, -1).normalize(),
+            ];
+
+            // Only check at camera height (horizontal collision only)
+            const origin = new THREE.Vector3(pos.x, pos.y, pos.z);
+            for (const dir of dirs) {
+                raycaster.set(origin, dir);
+                raycaster.far = playerRadius;
+                const hits = raycaster.intersectObjects(colliders, true);
+                if (hits.length > 0) return true;
+            }
+            return false;
+        }
+
+        // ── MOUSE LOOK — auto pointer lock on click ──
+        container.addEventListener('click', () => {
+            if (document.pointerLockElement !== container) {
+                container.requestPointerLock();
+            }
+        });
+        document.addEventListener('pointerlockchange', () => {
+            const instrEl = document.getElementById('instructions');
+            if (document.pointerLockElement === container) {
+                document.addEventListener('mousemove', onMouseLook);
+                if (instrEl) instrEl.style.display = 'none';
+            } else {
+                document.removeEventListener('mousemove', onMouseLook);
+                if (instrEl) instrEl.style.display = 'block';
+            }
+        });
+        function onMouseLook(e) {
+            yaw   -= e.movementX * sensitivity;
+            pitch -= e.movementY * sensitivity;
+            pitch = Math.max(-Math.PI / 2 + 0.05, Math.min(Math.PI / 2 - 0.05, pitch));
+        }
+
+        // ── KEYBOARD ──
+        document.addEventListener('keydown', (e) => { keys[e.code] = true; });
+        document.addEventListener('keyup',   (e) => { keys[e.code] = false; });
+
+        // ── MOBILE ──
+        let joyX = 0, joyY = 0;
+        if (isMobile) {
+            document.querySelector('.desktop-ins').style.display = 'none';
+            document.querySelector('.mobile-ins').style.display = 'block';
+
+            const joystick = nipplejs.create({
+                zone: document.getElementById('joystick-zone'),
+                mode: 'static',
+                position: { left: '80px', bottom: '80px' },
+                color: '#FFDDAE',
+                size: 100
+            });
+            joystick.on('move', (_, d) => { joyX = d.vector.x; joyY = d.vector.y; });
+            joystick.on('end', () => { joyX = 0; joyY = 0; });
+
+            let tx = 0, ty = 0;
+            container.addEventListener('touchstart', (e) => { tx = e.touches[0].pageX; ty = e.touches[0].pageY; });
+            container.addEventListener('touchmove', (e) => {
+                yaw   -= (e.touches[0].pageX - tx) * 0.005;
+                pitch -= (e.touches[0].pageY - ty) * 0.005;
+                pitch = Math.max(-Math.PI / 2 + 0.05, Math.min(Math.PI / 2 - 0.05, pitch));
+                tx = e.touches[0].pageX; ty = e.touches[0].pageY;
+            });
+        }
+
+        // ── LOAD SCENE ──
+        let destNameBackup = '';
+
+        async function initEnvironment() {
+            // Fetch destination info
+            try {
+                const res = await fetch(`http://localhost:8080/api/destinations/${destId}`);
+                if (res.ok) {
+                    const dest = await res.json();
+                    const label = `<i class="ri-map-pin-line" style="color: var(--color-accent); margin-right: 5px;"></i> ${dest.destinationName}`;
+                    document.getElementById('dest-name').innerHTML = label;
+                    destNameBackup = label;
+                }
+            } catch (e) {}
+
+            // Fetch model path
+            let modelPath = null;
+            try {
+                const vrRes = await fetch(`http://localhost:8080/api/destinations/${destId}/vr`);
+                if (vrRes.ok) {
+                    const vrEnv = await vrRes.json();
+                    modelPath = vrEnv.modelPath;
+                }
+            } catch (e) { console.error('VR env fetch error:', e); }
+
+            // Lighting
+            scene.add(new THREE.AmbientLight(0xffffff, 0.7));
+            const sun = new THREE.DirectionalLight(0xfff4e6, 0.9);
+            sun.position.set(50, 100, 50);
+            sun.castShadow = true;
+            scene.add(sun);
+            scene.add(new THREE.DirectionalLight(0xc4d7ff, 0.3).translateX(-50).translateY(50).translateZ(-50));
+            scene.add(new THREE.HemisphereLight(0x87CEEB, 0x98FB98, 0.5));
+
+            // ── SKY DOME — gradient from bright zenith to warm horizon ──
+            const skyGeo = new THREE.SphereGeometry(900, 32, 32);
+            const skyMat = new THREE.ShaderMaterial({
+                uniforms: {
+                    topColor:    { value: new THREE.Color(0x87CEEB) },  // sky blue
+                    bottomColor: { value: new THREE.Color(0xE8F0F8) },  // matches fog
+                    offset:  { value: 20 },
+                    exponent: { value: 0.4 }
+                },
+                vertexShader: `
+                    varying vec3 vWorldPos;
+                    void main() {
+                        vec4 wp = modelMatrix * vec4(position, 1.0);
+                        vWorldPos = wp.xyz;
+                        gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
+                    }
+                `,
+                fragmentShader: `
+                    uniform vec3 topColor;
+                    uniform vec3 bottomColor;
+                    uniform float offset;
+                    uniform float exponent;
+                    varying vec3 vWorldPos;
+                    void main() {
+                        float h = normalize(vWorldPos + offset).y;
+                        gl_FragColor = vec4(mix(bottomColor, topColor, max(pow(max(h, 0.0), exponent), 0.0)), 1.0);
+                    }
+                `,
+                side: THREE.BackSide,
+                depthWrite: false
+            });
+            const sky = new THREE.Mesh(skyGeo, skyMat);
+            scene.add(sky);
+
+            // Ground — soft green with no sharp edge thanks to fog
+            const ground = new THREE.Mesh(
+                new THREE.PlaneGeometry(2000, 2000),
+                new THREE.MeshLambertMaterial({ color: 0xC8D6A0 })
+            );
+            ground.rotation.x = -Math.PI / 2;
+            ground.receiveShadow = true;
+            scene.add(ground);
+
+            // Load GLB
+            if (modelPath) {
+                const loader = new THREE.GLTFLoader();
+                loader.load('..' + modelPath, (gltf) => {
+                    const model = gltf.scene;
+
+                    // 1. Compute initial bounding box and scale
+                    const box = new THREE.Box3().setFromObject(model);
+                    const size = box.getSize(new THREE.Vector3());
+                    const maxDim = Math.max(size.x, size.y, size.z);
+                    if (maxDim > 0) {
+                        const scale = 40 / maxDim;
+                        model.scale.setScalar(scale);
+                    }
+
+                    // 2. Update matrices after scaling
+                    model.updateMatrixWorld(true);
+
+                    // 3. Recompute bounding box after scale + matrix update
+                    const sBox = new THREE.Box3().setFromObject(model);
+                    const sCenter = sBox.getCenter(new THREE.Vector3());
+                    const sSize = sBox.getSize(new THREE.Vector3());
+
+                    // 4. Center the model at origin and sit on ground
+                    model.position.x -= sCenter.x;
+                    model.position.z -= sCenter.z;
+                    model.position.y -= sBox.min.y;
+
+                    // 5. Mesh Optimization & Colliders
+                    model.traverse((child) => {
+                        if (child.isMesh) {
+                            child.castShadow = true;
+                            child.receiveShadow = true;
+                            
+                            // 🏺 Pyramid Fix (ID 5): Solve transparency and backface culling
+                            if (destId === '5') {
+                                if (child.material) {
+                                    // Handle both single and multiple materials
+                                    const materials = Array.isArray(child.material) ? child.material : [child.material];
+                                    materials.forEach(mat => {
+                                        mat.side = THREE.DoubleSide; // Disable backface culling
+                                        mat.transparent = false;      // Ensure fully opaque
+                                        mat.opacity = 1.0;
+                                        mat.alphaTest = 0.5;
+                                        mat.depthWrite = true;
+                                    });
+                                }
+                                // Recalculate normals if geometry exists
+                                if (child.geometry) {
+                                    child.geometry.computeVertexNormals();
+                                }
+                            }
+                            
+                            colliders.push(child);
+                        }
+                    });
+
+                    model.updateMatrixWorld(true);
+                    scene.add(model);
+
+                    // 6. Position camera
+                    if (destId === '4') {
+                        // 🏟️ SPECIAL SPAWN: Inside the Colosseum
+                        // Center is arena floor, 1.6m is eye level
+                        camera.position.set(0, 1.6, 0);
+                        yaw = 0; // Look straight ahead into the arena structure
+                        pitch = 0.1; // Slight upward look for scale
+                        console.log('Colosseum Spawn: Inside Arena');
+                    } else {
+                        // DEFAULT SPAWN: In front of the model
+                        const frontDist = Math.max(sSize.x, sSize.z) * 0.6 + 5;
+                        const camY = Math.max(sSize.y * 0.25, 1.6);
+                        camera.position.set(0, camY, frontDist);
+
+                        // Face the camera toward the model center (looking toward -Z)
+                        yaw = Math.PI;  // 180° — looking back toward origin
+                        const modelCenterY = sSize.y * 0.5;
+                        pitch = Math.atan2(modelCenterY - camY, frontDist) * 0.5;
+                    }
+
+                    // 7. Cinematic Fade-in
+                    setTimeout(() => {
+                        const overlay = document.getElementById('fade-overlay');
+                        if (overlay) overlay.style.opacity = '0';
+                    }, 500);
+
+                    console.log('Model loaded:', modelPath, 'Size:', sSize, 'Camera at:', camera.position);
+
+                    // Restore name
+                    if (destNameBackup) document.getElementById('dest-name').innerHTML = destNameBackup;
+
+                }, undefined, (err) => {
+                    console.error('GLB load error:', err);
+                });
+            }
+        }
+
+        initEnvironment();
+
+        // ── GAME LOOP ──
+        function animate() {
+            requestAnimationFrame(animate);
+            const now = performance.now();
+            const dt = (now - prevTime) / 1000;
+            prevTime = now;
+
+            // Apply look
+            camera.quaternion.setFromEuler(new THREE.Euler(pitch, yaw, 0, 'YXZ'));
+
+            // Direction vectors — W/S follow full camera look direction (including up/down)
+            const fwd3D = new THREE.Vector3(0, 0, -1).applyQuaternion(camera.quaternion).normalize();
+            const rgt = new THREE.Vector3(1, 0, 0).applyAxisAngle(new THREE.Vector3(0, 1, 0), yaw);
+
+            const prev = camera.position.clone();
+            let moved = false;
+
+            if (!isMobile) {
+                const spd = moveSpeed * dt;
+                if (keys['KeyW'] || keys['ArrowUp'])    { camera.position.addScaledVector(fwd3D, spd);  moved = true; }
+                if (keys['KeyS'] || keys['ArrowDown'])   { camera.position.addScaledVector(fwd3D, -spd); moved = true; }
+                if (keys['KeyD'] || keys['ArrowRight'])  { camera.position.addScaledVector(rgt, spd);  moved = true; }
+                if (keys['KeyA'] || keys['ArrowLeft'])   { camera.position.addScaledVector(rgt, -spd); moved = true; }
+            } else {
+                if (joyX !== 0 || joyY !== 0) {
+                    const spd = 15 * dt;
+                    camera.position.addScaledVector(fwd, joyY * spd);
+                    camera.position.addScaledVector(rgt, joyX * spd);
+                    moved = true;
+                }
+            }
+
+            // Collision → revert
+            if (moved && checkCollision(camera.position)) {
+                camera.position.copy(prev);
+            }
+
+            // Floor limit — eye height when standing
+            if (camera.position.y < 1.6) camera.position.y = 1.6;
+
+            renderer.render(scene, camera);
+        }
+
+        animate();
+
+        window.addEventListener('resize', () => {
+            camera.aspect = window.innerWidth / window.innerHeight;
+            camera.updateProjectionMatrix();
+            renderer.setSize(window.innerWidth, window.innerHeight);
+        });
+    </script>
+</body>
+</html>

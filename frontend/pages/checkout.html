@@ -1,0 +1,131 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Checkout - VRTour</title>
+    <link rel="stylesheet" href="../css/style.css">
+    <link rel="stylesheet" href="../css/dark-mode.css">
+    <link href="https://cdn.jsdelivr.net/npm/remixicon@3.5.0/fonts/remixicon.css" rel="stylesheet">
+    <style>
+        .checkout-container { padding: 120px 5% 80px 5%; max-width: 800px; margin: 0 auto; }
+        .summary-card { padding: 3rem; margin-bottom: 2rem; }
+        .payment-form { padding: 3rem; }
+        .form-row { display: flex; gap: 1.5rem; }
+        .form-row .form-group { flex: 1; }
+        .divider { border-top: 1px solid rgba(0,0,0,0.05); margin: 2rem 0; }
+    </style>
+</head>
+<body>
+    <script src="../js/theme.js"></script>
+
+    <nav class="glass">
+        <a href="../index.html" class="logo"><i class="ri-planet-line" style="color: var(--color-accent); margin-right: 8px;"></i> VRTour</a>
+        <ul class="nav-links">
+            <li><a href="../index.html">Home</a></li>
+            <li><a href="destinations.html">Destinations</a></li>
+            <li><a href="packages.html">Packages</a></li>
+        </ul>
+    </nav>
+
+    <div class="checkout-container">
+        <h2 style="margin-bottom: 2rem; font-size: 2.5rem; letter-spacing:-0.5px;">Secure Checkout</h2>
+        
+        <div class="card glass summary-card" id="package-summary">
+            <h3 style="color: var(--color-text-light); text-align: center;">Loading Package Details...</h3>
+        </div>
+
+        <div class="card glass payment-form">
+            <h3 style="margin-bottom: 2rem; font-size: 1.5rem;">Payment Information</h3>
+            <form id="checkoutForm">
+                <div class="form-group">
+                    <label>Cardholder Name</label>
+                    <input type="text" id="cardName" required placeholder="John Doe">
+                </div>
+                <div class="form-group">
+                    <label>Card Number</label>
+                    <input type="text" id="cardNumber" required placeholder="XXXX-XXXX-XXXX-XXXX" maxlength="19">
+                </div>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label>Expiry Date</label>
+                        <input type="text" required placeholder="MM/YY" maxlength="5">
+                    </div>
+                    <div class="form-group">
+                        <label>Security Code</label>
+                        <input type="text" required placeholder="CVV" maxlength="3">
+                    </div>
+                </div>
+                <button type="submit" class="btn btn-primary" style="width: 100%; margin-top: 1rem; font-size: 1.1rem; padding: 1.2rem;">Confirm Booking</button>
+            </form>
+        </div>
+    </div>
+
+    <script src="../js/auth.js"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', async () => {
+            checkAuth();
+            const urlParams = new URLSearchParams(window.location.search);
+            const packageId = urlParams.get('packageId');
+            
+            if (!packageId) {
+                window.location.href = 'packages.html';
+                return;
+            }
+
+            try {
+                const res = await fetch(`http://localhost:8080/api/packages/${packageId}`);
+                if(res.ok) {
+                    const pkg = await res.json();
+                    document.getElementById('package-summary').innerHTML = `
+                        <h3 style="font-size: 2rem; margin-bottom: 1rem;">${pkg.packageName}</h3>
+                        <p style="margin-bottom: 0.5rem; color: var(--color-text-light);"><i class="ri-time-line"></i> ${pkg.duration}</p>
+                        <p style="margin-bottom: 1.5rem; color: var(--color-text-light);"><i class="ri-hotel-line"></i> ${pkg.hotelDetails}</p>
+                        <div class="divider"></div>
+                        <div style="display: flex; justify-content: space-between; font-size: 1.8rem; font-weight: 500;">
+                            <span>Total</span>
+                            <span>$${pkg.price}</span>
+                        </div>
+                    `;
+                }
+            } catch (e) {
+                console.error("Error loading package details", e);
+            }
+
+            document.getElementById('checkoutForm').addEventListener('submit', async (e) => {
+                e.preventDefault();
+                const token = localStorage.getItem('token');
+                
+                const btn = e.target.querySelector('button');
+                btn.innerText = 'Processing...';
+                btn.disabled = true;
+
+                try {
+                    const res = await fetch('http://localhost:8080/api/bookings', {
+                        method: 'POST',
+                        headers: { 
+                            'Content-Type': 'application/json',
+                            'Authorization': `Bearer ${token}`
+                        },
+                        body: JSON.stringify({ packageId: parseInt(packageId) })
+                    });
+
+                    if (res.ok) {
+                        setTimeout(() => {
+                            window.location.href = 'dashboard.html';
+                        }, 800);
+                    } else {
+                        alert('Booking failed. Please try again.');
+                        btn.innerText = 'Confirm Booking';
+                        btn.disabled = false;
+                    }
+                } catch (error) {
+                    alert('An error occurred.');
+                    btn.innerText = 'Confirm Booking';
+                    btn.disabled = false;
+                }
+            });
+        });
+    </script>
+</body>
+</html>

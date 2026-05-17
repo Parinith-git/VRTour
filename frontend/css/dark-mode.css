@@ -1,0 +1,334 @@
+/* ══════════════════════════════════════════════════
+   THEME TOGGLE — Dark / Light Mode System
+   ══════════════════════════════════════════════════ */
+
+/* ── Dark Mode Variables ── */
+[data-theme="dark"] {
+    --color-primary: #7DD3FC;
+    --color-accent: #FFDDAE;
+    --color-secondary: #1E293B;
+    --color-success: #6EE7A0;
+    --color-white: #1E293B;
+    --color-bg: #0F172A;
+    --color-text: #F8FAFC;
+    --color-text-light: #CBD5E1;
+    --color-highlight: #FFDDAE;
+    --shadow-sm: 0 4px 12px rgba(0, 0, 0, 0.3);
+    --shadow-md: 0 10px 30px rgba(0, 0, 0, 0.4);
+    --shadow-lg: 0 20px 50px rgba(0, 0, 0, 0.5);
+}
+
+/* ── Theme Transition ── */
+html, html * {
+    transition: background-color 0.4s ease, 
+                color 0.4s ease, 
+                border-color 0.4s ease, 
+                box-shadow 0.4s ease;
+}
+
+/* ── Toggle Switch ── */
+.theme-toggle {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    cursor: pointer;
+    margin-left: 1rem;
+    padding: 6px;
+    border-radius: 50px;
+    transition: all 0.3s ease;
+}
+
+.theme-toggle .toggle-track {
+    width: 48px;
+    height: 26px;
+    background: linear-gradient(135deg, #C6E7FF, #D4F6FF);
+    border-radius: 50px;
+    position: relative;
+    transition: background 0.4s ease;
+    border: 1px solid rgba(198, 231, 255, 0.4);
+    box-shadow: inset 0 2px 4px rgba(0,0,0,0.06);
+}
+
+[data-theme="dark"] .theme-toggle .toggle-track {
+    background: linear-gradient(135deg, #1E293B, #334155);
+    border: 1px solid rgba(125, 211, 252, 0.25);
+    box-shadow: inset 0 2px 4px rgba(0,0,0,0.3);
+}
+
+.theme-toggle .toggle-thumb {
+    width: 20px;
+    height: 20px;
+    background: white;
+    border-radius: 50%;
+    position: absolute;
+    top: 2px;
+    left: 3px;
+    transition: transform 0.4s cubic-bezier(0.68, -0.15, 0.265, 1.35),
+                background 0.3s ease,
+                box-shadow 0.3s ease;
+    box-shadow: 0 2px 6px rgba(0,0,0,0.15);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 12px;
+}
+
+[data-theme="dark"] .theme-toggle .toggle-thumb {
+    transform: translateX(22px);
+    background: #0F172A;
+    box-shadow: 0 0 10px rgba(125, 211, 252, 0.3);
+}
+
+.theme-toggle .toggle-icon {
+    font-size: 14px;
+    line-height: 1;
+    pointer-events: none;
+}
+
+/* ── Dark Mode Glass Override ── */
+[data-theme="dark"] .glass {
+    background: rgba(30, 41, 59, 0.8);
+    border: 1px solid rgba(125, 211, 252, 0.12);
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.4);
+}
+
+/* ── Dark Mode Nav ── */
+[data-theme="dark"] nav {
+    border-bottom: 1px solid rgba(125, 211, 252, 0.1);
+}
+
+[data-theme="dark"] .nav-links a:hover {
+    background: rgba(125, 211, 252, 0.08);
+}
+
+[data-theme="dark"] .nav-links a.active {
+    background: var(--color-primary);
+    color: #0F172A;
+    font-weight: 600;
+    box-shadow: 0 4px 20px rgba(125, 211, 252, 0.4);
+}
+
+/* ── Dark Mode Cards ── */
+[data-theme="dark"] .card {
+    background: #1E293B;
+    border: 1px solid rgba(125, 211, 252, 0.1);
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+}
+
+[data-theme="dark"] .card:hover {
+    border-color: rgba(125, 211, 252, 0.25);
+    box-shadow: 0 15px 40px rgba(0, 0, 0, 0.5);
+}
+
+/* ── Dark Mode Hero ── */
+[data-theme="dark"] .hero {
+    background: radial-gradient(ellipse at top right, rgba(125, 211, 252, 0.08) 0%, transparent 50%),
+                radial-gradient(ellipse at bottom left, rgba(30, 41, 59, 0.6) 0%, transparent 50%),
+                radial-gradient(ellipse at center, rgba(255, 221, 174, 0.04) 0%, transparent 60%);
+    background-color: var(--color-bg);
+}
+
+[data-theme="dark"] .hero::before {
+    background: radial-gradient(circle, rgba(125, 211, 252, 0.06) 0%, transparent 70%);
+}
+
+/* ── Dark Mode Buttons ── */
+[data-theme="dark"] .btn-primary {
+    color: #0F172A;
+    box-shadow: 0 4px 18px rgba(255, 221, 174, 0.25);
+}
+
+[data-theme="dark"] .btn-primary:hover {
+    box-shadow: 0 8px 28px rgba(255, 221, 174, 0.4);
+}
+
+[data-theme="dark"] .btn-outline {
+    border-color: rgba(203, 213, 225, 0.2);
+    color: var(--color-text);
+}
+
+[data-theme="dark"] .btn-outline:hover {
+    border-color: var(--color-primary);
+    background: rgba(125, 211, 252, 0.12);
+    color: var(--color-primary);
+    box-shadow: 0 4px 15px rgba(125, 211, 252, 0.15);
+}
+
+/* ── Dark Mode Forms ── */
+[data-theme="dark"] .form-group input,
+[data-theme="dark"] .form-group select,
+[data-theme="dark"] .form-group textarea {
+    background: #1E293B;
+    border-color: rgba(125, 211, 252, 0.15);
+    color: var(--color-text);
+}
+
+[data-theme="dark"] .form-group input:focus,
+[data-theme="dark"] .form-group select:focus,
+[data-theme="dark"] .form-group textarea:focus {
+    border-color: var(--color-primary);
+    background: #243447;
+    box-shadow: 0 0 0 4px rgba(125, 211, 252, 0.12);
+}
+
+[data-theme="dark"] .form-group input::placeholder {
+    color: #64748B;
+}
+
+/* ── Dark Mode Auth Container ── */
+[data-theme="dark"] .auth-container {
+    background: radial-gradient(ellipse at center, rgba(125, 211, 252, 0.06) 0%, transparent 65%),
+                radial-gradient(ellipse at bottom right, rgba(30, 41, 59, 0.4) 0%, transparent 50%);
+    background-color: var(--color-bg);
+}
+
+/* ── Dark Mode Tags ── */
+[data-theme="dark"] .tag {
+    background: #243447;
+    border-color: rgba(125, 211, 252, 0.15);
+}
+
+/* ── Dark Mode Page Dividers / Sections ── */
+[data-theme="dark"] hr {
+    border-color: rgba(125, 211, 252, 0.08);
+}
+
+/* ── Dark Mode: Packages / Travel Planner Styles ── */
+[data-theme="dark"] .dest-chip {
+    background: #1E293B;
+    border-color: rgba(125, 211, 252, 0.15);
+}
+
+[data-theme="dark"] .dest-chip:hover {
+    border-color: rgba(125, 211, 252, 0.35);
+}
+
+[data-theme="dark"] .dest-chip.selected {
+    border-color: var(--color-primary);
+    background: rgba(125, 211, 252, 0.1);
+}
+
+[data-theme="dark"] .style-option {
+    background: #1E293B;
+    border-color: rgba(125, 211, 252, 0.12);
+}
+
+[data-theme="dark"] .style-option:hover {
+    border-color: rgba(125, 211, 252, 0.3);
+}
+
+[data-theme="dark"] .style-option.selected {
+    border-color: var(--color-accent);
+    background: rgba(255, 221, 174, 0.08);
+}
+
+[data-theme="dark"] .trip-summary {
+    background: #1E293B;
+    border-color: rgba(125, 211, 252, 0.1);
+}
+
+[data-theme="dark"] .breakdown-item {
+    border-bottom-color: rgba(125, 211, 252, 0.06);
+}
+
+[data-theme="dark"] .reco-card {
+    background: #1E293B;
+    border-color: rgba(125, 211, 252, 0.1);
+}
+
+[data-theme="dark"] .reco-card:hover {
+    border-color: rgba(125, 211, 252, 0.25);
+}
+
+/* ── Dark Mode: Review Stars ── */
+[data-theme="dark"] .star-rating .ri-star-fill {
+    color: var(--color-accent);
+}
+
+/* ── Dark Mode: Dashboard Status Badges ── */
+[data-theme="dark"] .status-badge {
+    background: #243447;
+}
+
+/* ── Dark Mode: Profile Page ── */
+[data-theme="dark"] .profile-avatar {
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.4);
+}
+
+/* ── Dark Mode: Google Sign-in Button ── */
+[data-theme="dark"] .google-btn {
+    background: #243447;
+    border-color: rgba(125, 211, 252, 0.15);
+    color: var(--color-text);
+}
+
+[data-theme="dark"] .google-btn:hover {
+    background: #334155;
+}
+
+/* ── Dark Mode: VR Panel Override ── */
+[data-theme="dark"] .vr-info-panel {
+    background: rgba(15, 23, 42, 0.85);
+    border-color: rgba(125, 211, 252, 0.15);
+}
+
+/* ── Dark Mode: Footer / Scrollbar ── */
+[data-theme="dark"] ::-webkit-scrollbar-track {
+    background: #0F172A;
+}
+
+[data-theme="dark"] ::-webkit-scrollbar-thumb {
+    background: #334155;
+}
+
+[data-theme="dark"] ::-webkit-scrollbar-thumb:hover {
+    background: #475569;
+}
+
+/* ── Dark Mode: Misc Inline Styles ── */
+[data-theme="dark"] .loading-overlay {
+    background: rgba(15, 23, 42, 0.9);
+}
+
+[data-theme="dark"] .spinner {
+    border-color: rgba(125, 211, 252, 0.15);
+    border-top-color: var(--color-primary);
+}
+
+/* ── Dark Mode: Divider line ── */
+[data-theme="dark"] .divider-text::before,
+[data-theme="dark"] .divider-text::after {
+    background: rgba(125, 211, 252, 0.1);
+}
+
+/* ── Dark Mode: Reviews & Ratings ── */
+[data-theme="dark"] .reviews-section {
+    border-top-color: rgba(125, 211, 252, 0.08);
+}
+
+[data-theme="dark"] .avg-rating-box {
+    background: #1E293B;
+    border: 1px solid rgba(125, 211, 252, 0.1);
+}
+
+[data-theme="dark"] .dist-bar-bg {
+    background: rgba(255, 255, 255, 0.05);
+}
+
+[data-theme="dark"] .review-card {
+    border-color: rgba(125, 211, 252, 0.08);
+}
+
+[data-theme="dark"] .user-avatar {
+    background: #243447;
+    color: var(--color-primary);
+    border: 1px solid rgba(125, 211, 252, 0.2);
+}
+
+[data-theme="dark"] .review-header .user-name {
+    color: var(--color-text);
+}
+
+[data-theme="dark"] .star-rating-input {
+    color: #334155;
+}
