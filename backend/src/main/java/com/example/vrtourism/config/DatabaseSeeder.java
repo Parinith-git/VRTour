@@ -22,8 +22,14 @@ public class DatabaseSeeder implements CommandLineRunner {
 
     @Override
     public void run(String... args) throws Exception {
-        if (destinationRepository.findByDestinationId(1L).isEmpty()) {
-            System.out.println("Official destinations not found. Clearing old test data and seeding database with official travel experiences...");
+        boolean forceReSeed = false;
+        Destination eiffelCheck = destinationRepository.findByDestinationId(2L).orElse(null);
+        if (eiffelCheck != null && eiffelCheck.getImagePath().contains("photo-1511739001486-6bfe10ce65f4")) {
+            forceReSeed = true;
+        }
+
+        if (destinationRepository.findByDestinationId(1L).isEmpty() || forceReSeed) {
+            System.out.println("Official destinations not found or need update. Clearing old data and seeding database with official travel experiences...");
             destinationRepository.deleteAll();
             vrEnvironmentRepository.deleteAll();
             travelPackageRepository.deleteAll();
@@ -58,7 +64,7 @@ public class DatabaseSeeder implements CommandLineRunner {
             eiffel.setDestinationId(2L);
             eiffel.setDestinationName("Eiffel Tower");
             eiffel.setDescription("Experience the iconic iron lattice tower standing tall over the romantic city of Paris, a symbol of French artistry and engineering.");
-            eiffel.setImagePath("https://images.unsplash.com/photo-1511739001486-6bfe10ce65f4?w=800&q=80");
+            eiffel.setImagePath("https://images.unsplash.com/photo-1502602898657-3e91760cbb34?w=800&q=80");
             eiffel.setEnvironmentType("Monument");
             eiffel.setLocation("Paris, France");
             destinationRepository.save(eiffel);
@@ -158,7 +164,7 @@ public class DatabaseSeeder implements CommandLineRunner {
             liberty.setDestinationId(6L);
             liberty.setDestinationName("Liberty Island");
             liberty.setDescription("Visit the Statue of Liberty, a colossal neoclassical sculpture symbolizing freedom and democracy.");
-            liberty.setImagePath("https://images.unsplash.com/photo-1485738422979-f5c462d49f04?w=800&q=80");
+            liberty.setImagePath("https://images.unsplash.com/photo-1501594907352-04cda38ebc29?w=800&q=80");
             liberty.setEnvironmentType("Monument");
             liberty.setLocation("New York, USA");
             destinationRepository.save(liberty);
